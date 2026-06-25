@@ -26,7 +26,7 @@ export default defineContentScript({
       try {
         if (!ctx.isValid) return;
         const page = getPageContext();
-        console.log('[pr-goto-def] show', symbol, 'page=', page); // TODO(task 9): remove
+        console.log('[pr-goto-def] show', symbol, 'path=', location.pathname, 'page=', page); // TODO(task 9): remove
         if (!page) return; // only acts on a PR /files page
         const outcome = await resolveDefinition(page, symbol);
         console.log('[pr-goto-def] outcome', outcome); // TODO(task 9): remove

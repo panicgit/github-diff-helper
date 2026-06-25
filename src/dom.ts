@@ -1,6 +1,8 @@
 import type { PageContext } from './types';
 
-const PR_FILES_RE = /^\/([^/]+)\/([^/]+)\/pull\/(\d+)\/files/;
+// Match any PR page (the new GitHub PR experience shows the diff at /pull/<n>
+// without a /files suffix), not just .../files.
+const PR_FILES_RE = /^\/([^/]+)\/([^/]+)\/pull\/(\d+)(?:\/|$)/;
 const SHA40_RE = /\/(?:blob|commits?)\/([0-9a-f]{40})(?:\/|$)/;
 
 // New React "Files changed" view (confirmed live 2026-06):
