@@ -4,8 +4,10 @@ import { resolveDefinition } from '../src/resolver';
 import { renderPopover, dismissPopover } from '../src/popover';
 
 // MVP content script — see docs/architecture.md sections 3, 5, 8.
+// Matches the whole PR (not just /files) so listeners survive SPA navigation
+// into the "Files changed" tab; show() gates on getPageContext() == /files.
 export default defineContentScript({
-  matches: ['https://github.com/*/*/pull/*/files*'],
+  matches: ['https://github.com/*/*/pull/*'],
   cssInjectionMode: 'ui',
   async main(ctx) {
     // The keyboard command arrives with no event target, so track the pointer.
@@ -23,7 +25,7 @@ export default defineContentScript({
     async function show(symbol: string, anchor: DOMRect): Promise<void> {
       if (!ctx.isValid) return;
       const page = getPageContext();
-      if (!page) return;
+      if (!page) return; // only acts on a PR /files page
       const outcome = await resolveDefinition(page, symbol);
       if (!ctx.isValid) return;
       renderPopover({
@@ -48,19 +50,16 @@ export default defineContentScript({
     }
 
     // Primary trigger: double-click a code identifier (the word it selects).
+    // No DOM gate beyond "valid identifier" — show() already limits to /files.
     window.addEventListener('dblclick', (e) => {
-      const target = e.target as HTMLElement | null;
-      if (!target?.closest(DIAG_SELECTORS.files)) return; // only within a diff
       const sel = window.getSelection();
       const text = sel?.toString().trim() ?? '';
-      if (!isResolvableIdentifier(text)) {
-        dismissPopover();
-        return;
-      }
+      if (!isResolvableIdentifier(text)) return;
+      const target = e.target as HTMLElement | null;
       const anchor =
         sel && sel.rangeCount > 0
           ? sel.getRangeAt(0).getBoundingClientRect()
-          : target.getBoundingClientRect();
+          : target?.getBoundingClientRect() ?? new DOMRect(e.clientX, e.clientY, 0, 0);
       void show(text, anchor);
     });
 

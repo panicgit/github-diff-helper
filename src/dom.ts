@@ -11,6 +11,7 @@ const SHA40_RE = /\/(?:blob|commits?)\/([0-9a-f]{40})(?:\/|$)/;
 const FILE_CONTAINERS = [
   '[data-tagsearch-path]',
   'copilot-diff-entry',
+  '[data-testid="file-diff"]',
   '.file[data-path]',
   '.js-file',
   '.file',
@@ -21,7 +22,11 @@ const CODE_LINES = [
   '.blob-code-inner',
   '[data-code-text]',
   '[data-grid-cell-id$="-code"]',
+  '.react-code-text',
+  '.react-file-line',
   '.diff-text-cell',
+  '.diff-text',
+  'td.blob-code',
 ];
 
 export const DIAG_SELECTORS = {
@@ -64,14 +69,25 @@ export interface DiffCodeElement {
   path: string;
 }
 
-/** Gather code-bearing elements across all rendered diff files (best-effort). */
+/**
+ * Gather code-bearing elements across all rendered diff files (best-effort).
+ * If file containers don't match the current view, fall back to scanning code
+ * lines page-wide (path unknown) so Tier 0 can still find a definition.
+ */
 export function collectDiffCodeElements(): DiffCodeElement[] {
   const out: DiffCodeElement[] = [];
+  const codeSel = CODE_LINES.join(',');
+
   for (const container of document.querySelectorAll<HTMLElement>(FILE_CONTAINERS.join(','))) {
-    const path = filePathOf(container);
-    if (!path) continue;
-    for (const el of container.querySelectorAll<HTMLElement>(CODE_LINES.join(','))) {
+    const path = filePathOf(container) ?? '';
+    for (const el of container.querySelectorAll<HTMLElement>(codeSel)) {
       out.push({ el, path });
+    }
+  }
+
+  if (out.length === 0) {
+    for (const el of document.querySelectorAll<HTMLElement>(codeSel)) {
+      out.push({ el, path: '' });
     }
   }
   return out;

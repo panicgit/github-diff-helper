@@ -1,16 +1,28 @@
 import type { DefinitionResult } from '../types';
 import { collectDiffCodeElements } from '../dom';
 
-/** JS/TS definition-detection patterns for a symbol, ranked declaration-first. */
+/** Multi-language definition-detection patterns for a symbol (Kotlin/JS/TS/
+ *  Java/Python/Go/...), ranked declaration-first. */
 export function definitionPatterns(sym: string): RegExp[] {
   const s = escapeRe(sym);
   return [
-    new RegExp(`(?:export\\s+)?(?:async\\s+)?function\\s+${s}\\b`),
-    new RegExp(`(?:export\\s+)?(?:abstract\\s+)?class\\s+${s}\\b`),
-    new RegExp(`(?:export\\s+)?(?:type|interface|enum)\\s+${s}\\b`),
+    // function / method declarations
+    new RegExp(`\\bfun\\s+${s}\\b`), // Kotlin
+    new RegExp(`\\bdef\\s+${s}\\b`), // Python / Ruby / Scala
+    new RegExp(`\\bfunc\\s+${s}\\b`), // Go / Swift
+    new RegExp(`(?:export\\s+)?(?:async\\s+)?function\\s+${s}\\b`), // JS / TS
+    // class / type declarations (incl. Kotlin/Java modifiers)
+    new RegExp(
+      `\\b(?:data\\s+|sealed\\s+|abstract\\s+|open\\s+|final\\s+|inner\\s+|enum\\s+|annotation\\s+|value\\s+|public\\s+|private\\s+|internal\\s+)*class\\s+${s}\\b`,
+    ),
+    new RegExp(`\\b(?:interface|object|enum|trait|struct|protocol|type)\\s+${s}\\b`),
+    // value / property declarations
+    new RegExp(`\\b(?:val|var|const|let)\\s+${s}\\b`), // Kotlin / JS / TS
     new RegExp(`(?:export\\s+)?(?:const|let|var)\\s+${s}\\s*[=:]`),
-    new RegExp(`\\b${s}\\s*[:=]\\s*(?:async\\s*)?\\(`), // arrow / function expr assigned
-    new RegExp(`\\b${s}\\s*\\([^)]*\\)\\s*\\{`), // method / function shorthand
+    // assigned arrow / function expression (JS / TS)
+    new RegExp(`\\b${s}\\s*[:=]\\s*(?:async\\s*)?\\(`),
+    // method / function shorthand: name( ... ) {  or  name( ... ) :
+    new RegExp(`\\b${s}\\s*\\([^)]*\\)\\s*[:{]`),
   ];
 }
 
