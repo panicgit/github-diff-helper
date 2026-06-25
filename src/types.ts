@@ -2,21 +2,18 @@ export interface PageContext {
   owner: string;
   repo: string;
   prNumber: number;
+  /** Best-effort PR head SHA (empty string if not found). */
   headSha: string;
-  baseSha?: string;
 }
 
-export type DefinitionSource = 'in-diff' | 'search';
-
 export interface DefinitionResult {
-  source: DefinitionSource;
+  source: 'in-diff' | 'search';
   symbol: string;
   path: string;
-  line: number;
-  /** Permalink to the definition's blob at the resolved line. */
-  permalinkUrl: string;
-  /** Short snippet of the definition line(s). */
+  line?: number;
+  /** For cross-file/search jumps. */
+  permalinkUrl?: string;
   snippet: string;
-  /** True when the definition is in a file currently rendered in the PR diff. */
-  sameFileInPr: boolean;
+  /** In-diff only: the matched element to scroll to. */
+  targetEl?: HTMLElement;
 }

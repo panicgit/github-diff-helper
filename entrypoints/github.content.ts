@@ -1,6 +1,7 @@
-import { getPageContext } from '../src/dom';
+import { getPageContext, DIAG_SELECTORS } from '../src/dom';
 import { tokenAtPoint } from '../src/token';
 import { resolveDefinition } from '../src/resolver';
+import { renderPopover, dismissPopover } from '../src/popover';
 
 // MVP content script — see docs/architecture.md sections 3, 5, 8.
 export default defineContentScript({
@@ -25,10 +26,21 @@ export default defineContentScript({
       const page = getPageContext();
       if (!page) return;
       const symbol = tokenAtPoint(x, y);
-      if (!symbol) return;
+      if (!symbol) {
+        dismissPopover();
+        return;
+      }
+      const el = document.elementFromPoint(x, y) as HTMLElement | null;
+      const anchor = el?.getBoundingClientRect() ?? new DOMRect(x, y, 0, 0);
       const outcome = await resolveDefinition(page, symbol);
-      // TODO(step 8): render the Shadow-DOM popover from `outcome`.
-      console.debug('[pr-goto-def]', symbol, outcome);
+      renderPopover({
+        symbol,
+        results: outcome.results,
+        fallbackSearchUrl: outcome.fallbackSearchUrl,
+        searchCount: outcome.searchCount,
+        loggedIn: outcome.loggedIn,
+        anchor,
+      });
     }
 
     // Primary trigger: keyboard command, relayed by the background worker
@@ -39,11 +51,20 @@ export default defineContentScript({
 
     // Secondary trigger: Alt+click on a token (never hijacks normal clicks).
     window.addEventListener('click', (e) => {
-      if (!e.altKey) return;
-      void trigger(e.clientX, e.clientY);
+      if (e.altKey) void trigger(e.clientX, e.clientY);
     });
 
-    console.debug('[pr-goto-def] armed on', location.href);
+    if (import.meta.env.DEV) {
+      window.setTimeout(() => {
+        const files = document.querySelectorAll(DIAG_SELECTORS.files).length;
+        const codeLines = document.querySelectorAll(DIAG_SELECTORS.codeLines).length;
+        console.debug(
+          `[pr-goto-def] armed on ${location.href} — files:${files} codeLines:${codeLines} headSha:${
+            getPageContext()?.headSha || '?'
+          }`,
+        );
+      }, 1500);
+    }
   },
 });
 
