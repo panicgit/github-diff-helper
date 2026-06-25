@@ -1,5 +1,5 @@
 import { getPageContext, DIAG_SELECTORS } from '../src/dom';
-import { tokenAtPoint } from '../src/token';
+import { tokenAtPoint, isResolvableIdentifier } from '../src/token';
 import { resolveDefinition } from '../src/resolver';
 import { renderPopover, dismissPopover } from '../src/popover';
 
@@ -8,8 +8,7 @@ export default defineContentScript({
   matches: ['https://github.com/*/*/pull/*/files*'],
   cssInjectionMode: 'ui',
   async main(ctx) {
-    // The keyboard command arrives with no event target, so we track the last
-    // pointer position cheaply and hit-test it on trigger.
+    // The keyboard command arrives with no event target, so track the pointer.
     let lastX = 0;
     let lastY = 0;
     window.addEventListener(
@@ -21,18 +20,12 @@ export default defineContentScript({
       { passive: true },
     );
 
-    async function trigger(x: number, y: number): Promise<void> {
+    async function show(symbol: string, anchor: DOMRect): Promise<void> {
       if (!ctx.isValid) return;
       const page = getPageContext();
       if (!page) return;
-      const symbol = tokenAtPoint(x, y);
-      if (!symbol) {
-        dismissPopover();
-        return;
-      }
-      const el = document.elementFromPoint(x, y) as HTMLElement | null;
-      const anchor = el?.getBoundingClientRect() ?? new DOMRect(x, y, 0, 0);
       const outcome = await resolveDefinition(page, symbol);
+      if (!ctx.isValid) return;
       renderPopover({
         symbol,
         results: outcome.results,
@@ -43,15 +36,42 @@ export default defineContentScript({
       });
     }
 
-    // Primary trigger: keyboard command, relayed by the background worker
-    // (commands.onCommand does not fire inside content scripts).
-    browser.runtime.onMessage.addListener((message: unknown) => {
-      if (isJumpMessage(message)) void trigger(lastX, lastY);
+    function showAtPoint(x: number, y: number): void {
+      const symbol = tokenAtPoint(x, y);
+      if (!symbol) {
+        dismissPopover();
+        return;
+      }
+      const el = document.elementFromPoint(x, y) as HTMLElement | null;
+      const anchor = el?.getBoundingClientRect() ?? new DOMRect(x, y, 0, 0);
+      void show(symbol, anchor);
+    }
+
+    // Primary trigger: double-click a code identifier (the word it selects).
+    window.addEventListener('dblclick', (e) => {
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest(DIAG_SELECTORS.files)) return; // only within a diff
+      const sel = window.getSelection();
+      const text = sel?.toString().trim() ?? '';
+      if (!isResolvableIdentifier(text)) {
+        dismissPopover();
+        return;
+      }
+      const anchor =
+        sel && sel.rangeCount > 0
+          ? sel.getRangeAt(0).getBoundingClientRect()
+          : target.getBoundingClientRect();
+      void show(text, anchor);
     });
 
-    // Secondary trigger: Alt+click on a token (never hijacks normal clicks).
+    // Keyboard command, relayed by the background worker.
+    browser.runtime.onMessage.addListener((message: unknown) => {
+      if (isJumpMessage(message)) showAtPoint(lastX, lastY);
+    });
+
+    // Alt+click on a token (never hijacks normal clicks).
     window.addEventListener('click', (e) => {
-      if (e.altKey) void trigger(e.clientX, e.clientY);
+      if (e.altKey) showAtPoint(e.clientX, e.clientY);
     });
 
     // Lightweight self-diagnostic. TODO(task 9): gate behind a debug setting before publishing.
