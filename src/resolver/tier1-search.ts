@@ -65,7 +65,7 @@ async function doProbe(ctx: PageContext, sym: string): Promise<SearchProbe | nul
 
   if (p.results[0]) {
     // Captures the field map for the direct-jump upgrade. TODO(task 9): remove before publishing.
-    console.debug('[pr-goto-def] search results[0] =', p.results[0]);
+    console.log('[pr-goto-def] search results[0] =', p.results[0]);
   }
   return {
     loggedIn: Boolean(p.logged_in),

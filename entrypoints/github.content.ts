@@ -80,7 +80,7 @@ export default defineContentScript({
     window.setTimeout(() => {
       const files = document.querySelectorAll(DIAG_SELECTORS.files).length;
       const codeLines = document.querySelectorAll(DIAG_SELECTORS.codeLines).length;
-      console.debug(
+      console.log(
         `[pr-goto-def] armed on ${location.href} — files:${files} codeLines:${codeLines} headSha:${
           getPageContext()?.headSha || '?'
         }`,
@@ -112,5 +112,5 @@ function debugDumpStructure(node: Node | null): void {
     }
     n = n.parentNode;
   }
-  console.debug('[pr-goto-def] structure:\n  ' + chain.join('\n  ↑ '));
+  console.log('[pr-goto-def] structure:\n  ' + chain.join('\n  ↑ '));
 }
