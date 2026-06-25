@@ -1,0 +1,18 @@
+{
+  "name": "github-diff-helper",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Client-side go-to-definition inside GitHub PR diffs. Reuses your GitHub session. No data leaves your browser.",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "compile": "tsc --noEmit",
+    "postinstall": "wxt prepare"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "wxt": "0.20.27"
+  }
+}
