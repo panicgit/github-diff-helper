@@ -54,17 +54,16 @@ export default defineContentScript({
       if (e.altKey) void trigger(e.clientX, e.clientY);
     });
 
-    if (import.meta.env.DEV) {
-      window.setTimeout(() => {
-        const files = document.querySelectorAll(DIAG_SELECTORS.files).length;
-        const codeLines = document.querySelectorAll(DIAG_SELECTORS.codeLines).length;
-        console.debug(
-          `[pr-goto-def] armed on ${location.href} — files:${files} codeLines:${codeLines} headSha:${
-            getPageContext()?.headSha || '?'
-          }`,
-        );
-      }, 1500);
-    }
+    // Lightweight self-diagnostic. TODO(task 9): gate behind a debug setting before publishing.
+    window.setTimeout(() => {
+      const files = document.querySelectorAll(DIAG_SELECTORS.files).length;
+      const codeLines = document.querySelectorAll(DIAG_SELECTORS.codeLines).length;
+      console.debug(
+        `[pr-goto-def] armed on ${location.href} — files:${files} codeLines:${codeLines} headSha:${
+          getPageContext()?.headSha || '?'
+        }`,
+      );
+    }, 1500);
   },
 });
 

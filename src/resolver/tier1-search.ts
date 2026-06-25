@@ -37,8 +37,9 @@ export async function probeSearch(ctx: PageContext, sym: string): Promise<Search
     const p = data.payload ?? (data as unknown as typeof data.payload);
     if (!p || !Array.isArray(p.results)) return null;
 
-    if (import.meta.env.DEV && p.results[0]) {
-      // First real logged-in hit captures the field map for direct-jump work.
+    if (p.results[0]) {
+      // First real logged-in hit captures the field map for the direct-jump
+      // upgrade. TODO(task 9): remove before publishing.
       console.debug('[pr-goto-def] search results[0] =', p.results[0]);
     }
     return {

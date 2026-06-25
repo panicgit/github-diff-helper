@@ -11,7 +11,8 @@ export default defineConfig({
     permissions: ['storage'],
     commands: {
       'jump-to-def': {
-        suggested_key: { default: 'Ctrl+Shift+J', mac: 'Command+Shift+J' },
+        // Ctrl/Cmd+Shift+J collide with Chrome (DevTools / Downloads); use Y.
+        suggested_key: { default: 'Ctrl+Shift+Y', mac: 'Command+Shift+Y' },
         description: 'Jump to definition of the symbol under the cursor',
       },
     },
