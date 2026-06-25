@@ -23,19 +23,26 @@ export default defineContentScript({
     );
 
     async function show(symbol: string, anchor: DOMRect): Promise<void> {
-      if (!ctx.isValid) return;
-      const page = getPageContext();
-      if (!page) return; // only acts on a PR /files page
-      const outcome = await resolveDefinition(page, symbol);
-      if (!ctx.isValid) return;
-      renderPopover({
-        symbol,
-        results: outcome.results,
-        fallbackSearchUrl: outcome.fallbackSearchUrl,
-        searchCount: outcome.searchCount,
-        loggedIn: outcome.loggedIn,
-        anchor,
-      });
+      try {
+        if (!ctx.isValid) return;
+        const page = getPageContext();
+        console.log('[pr-goto-def] show', symbol, 'page=', page); // TODO(task 9): remove
+        if (!page) return; // only acts on a PR /files page
+        const outcome = await resolveDefinition(page, symbol);
+        console.log('[pr-goto-def] outcome', outcome); // TODO(task 9): remove
+        if (!ctx.isValid) return;
+        renderPopover({
+          symbol,
+          results: outcome.results,
+          fallbackSearchUrl: outcome.fallbackSearchUrl,
+          searchCount: outcome.searchCount,
+          loggedIn: outcome.loggedIn,
+          anchor,
+        });
+        console.log('[pr-goto-def] popover rendered @', Math.round(anchor.left), Math.round(anchor.bottom)); // TODO(task 9): remove
+      } catch (err) {
+        console.log('[pr-goto-def] show ERROR', err); // TODO(task 9): remove
+      }
     }
 
     function showAtPoint(x: number, y: number): void {
