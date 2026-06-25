@@ -54,6 +54,9 @@ export default defineContentScript({
     window.addEventListener('dblclick', (e) => {
       const sel = window.getSelection();
       const text = sel?.toString().trim() ?? '';
+      // TODO(task 9): remove. Logs the DOM structure of the double-clicked code
+      // so we can pin the React-diff selectors without pasting into the console.
+      if (text) debugDumpStructure(sel?.anchorNode ?? (e.target as Node | null));
       if (!isResolvableIdentifier(text)) return;
       const target = e.target as HTMLElement | null;
       const anchor =
@@ -92,4 +95,22 @@ function isJumpMessage(message: unknown): message is { type: 'jump-to-def' } {
     message !== null &&
     (message as { type?: unknown }).type === 'jump-to-def'
   );
+}
+
+// TODO(task 9): remove. Prints the ancestor chain (tags + attributes) of the
+// double-clicked code so we can pin the current GitHub diff selectors.
+function debugDumpStructure(node: Node | null): void {
+  const chain: string[] = [];
+  let n: Node | null = node;
+  while (n && chain.length < 10) {
+    if (n.nodeType === 1) {
+      const el = n as Element;
+      const attrs = [...el.attributes]
+        .map((a) => `${a.name}="${a.value.slice(0, 40)}"`)
+        .join(' ');
+      chain.push(`<${el.tagName.toLowerCase()} ${attrs}>`);
+    }
+    n = n.parentNode;
+  }
+  console.debug('[pr-goto-def] structure:\n  ' + chain.join('\n  ↑ '));
 }
