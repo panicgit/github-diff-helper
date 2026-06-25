@@ -17,6 +17,21 @@ export function isResolvableIdentifier(word: string): boolean {
 }
 
 /**
+ * Pull a usable identifier out of a (possibly messy) selection string — handles
+ * leading diff markers, whitespace, or a dotted expression like
+ * `OrderStore.getOrderIdList`. Returns the longest non-keyword identifier, or null.
+ */
+export function extractIdentifier(text: string): string | null {
+  const t = text.trim();
+  if (isResolvableIdentifier(t)) return t;
+  const matches = t.match(/[A-Za-z_$][A-Za-z0-9_$]*/g);
+  if (!matches) return null;
+  const candidates = matches.filter((m) => !JS_KEYWORDS.has(m));
+  if (candidates.length === 0) return null;
+  return candidates.reduce((a, b) => (b.length > a.length ? b : a));
+}
+
+/**
  * Symbol token under a viewport point, or null.
  * Primary path reads a per-token syntax span; fallback tokenizes a bare text
  * node. VERIFY which path the current GitHub diff uses (section 7B10).

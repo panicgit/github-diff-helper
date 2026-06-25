@@ -1,5 +1,5 @@
 import { getPageContext, DIAG_SELECTORS } from '../src/dom';
-import { tokenAtPoint, isResolvableIdentifier } from '../src/token';
+import { tokenAtPoint, extractIdentifier } from '../src/token';
 import { resolveDefinition } from '../src/resolver';
 import { renderPopover, dismissPopover } from '../src/popover';
 
@@ -60,17 +60,16 @@ export default defineContentScript({
     // No DOM gate beyond "valid identifier" — show() already limits to /files.
     window.addEventListener('dblclick', (e) => {
       const sel = window.getSelection();
-      const text = sel?.toString().trim() ?? '';
-      // TODO(task 9): remove. Logs the DOM structure of the double-clicked code
-      // so we can pin the React-diff selectors without pasting into the console.
-      if (text) debugDumpStructure(sel?.anchorNode ?? (e.target as Node | null));
-      if (!isResolvableIdentifier(text)) return;
+      const raw = sel?.toString().trim() ?? '';
+      console.log('[pr-goto-def] selection=', JSON.stringify(raw)); // TODO(task 9): remove
+      const symbol = extractIdentifier(raw);
+      if (!symbol) return;
       const target = e.target as HTMLElement | null;
       const anchor =
         sel && sel.rangeCount > 0
           ? sel.getRangeAt(0).getBoundingClientRect()
           : target?.getBoundingClientRect() ?? new DOMRect(e.clientX, e.clientY, 0, 0);
-      void show(text, anchor);
+      void show(symbol, anchor);
     });
 
     // Keyboard command, relayed by the background worker.
@@ -102,22 +101,4 @@ function isJumpMessage(message: unknown): message is { type: 'jump-to-def' } {
     message !== null &&
     (message as { type?: unknown }).type === 'jump-to-def'
   );
-}
-
-// TODO(task 9): remove. Prints the ancestor chain (tags + attributes) of the
-// double-clicked code so we can pin the current GitHub diff selectors.
-function debugDumpStructure(node: Node | null): void {
-  const chain: string[] = [];
-  let n: Node | null = node;
-  while (n && chain.length < 10) {
-    if (n.nodeType === 1) {
-      const el = n as Element;
-      const attrs = [...el.attributes]
-        .map((a) => `${a.name}="${a.value.slice(0, 40)}"`)
-        .join(' ');
-      chain.push(`<${el.tagName.toLowerCase()} ${attrs}>`);
-    }
-    n = n.parentNode;
-  }
-  console.log('[pr-goto-def] structure:\n  ' + chain.join('\n  ↑ '));
 }
