@@ -37,7 +37,7 @@ function escapeRe(s: string): string {
  */
 export function resolveInDiff(sym: string): DefinitionResult | null {
   const patterns = definitionPatterns(sym);
-  for (const { el, path } of collectDiffCodeElements()) {
+  for (const { el, path, line } of collectDiffCodeElements()) {
     const text = el.textContent ?? '';
     if (!text.includes(sym)) continue;
     if (patterns.some((re) => re.test(text))) {
@@ -45,6 +45,7 @@ export function resolveInDiff(sym: string): DefinitionResult | null {
         source: 'in-diff',
         symbol: sym,
         path,
+        line,
         snippet: text.trim().slice(0, 200),
         targetEl: el,
       };
