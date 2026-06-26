@@ -1,11 +1,10 @@
-import { getPageContext, DIAG_SELECTORS } from '../src/dom';
+import { getPageContext } from '../src/dom';
 import { tokenAtPoint, extractIdentifier } from '../src/token';
 import { resolveDefinition } from '../src/resolver';
 import { renderPopover, dismissPopover } from '../src/popover';
 
-// MVP content script — see docs/architecture.md sections 3, 5, 8.
-// Matches the whole PR (not just /files) so listeners survive SPA navigation
-// into the "Files changed" tab; show() gates on getPageContext() == /files.
+// Content script — see docs/architecture.md. Matches the whole PR (not just
+// /files) so listeners survive SPA navigation; show() acts only on PR pages.
 export default defineContentScript({
   matches: ['https://github.com/*/*/pull/*'],
   cssInjectionMode: 'ui',
@@ -26,10 +25,8 @@ export default defineContentScript({
       try {
         if (!ctx.isValid) return;
         const page = getPageContext();
-        console.log('[pr-goto-def] show', symbol, 'path=', location.pathname, 'page=', page); // TODO(task 9): remove
-        if (!page) return; // only acts on a PR /files page
+        if (!page) return;
         const outcome = await resolveDefinition(page, symbol);
-        console.log('[pr-goto-def] outcome', outcome); // TODO(task 9): remove
         if (!ctx.isValid) return;
         renderPopover({
           symbol,
@@ -39,9 +36,8 @@ export default defineContentScript({
           loggedIn: outcome.loggedIn,
           anchor,
         });
-        console.log('[pr-goto-def] popover rendered @', Math.round(anchor.left), Math.round(anchor.bottom)); // TODO(task 9): remove
-      } catch (err) {
-        console.log('[pr-goto-def] show ERROR', err); // TODO(task 9): remove
+      } catch {
+        // Resolution is best-effort; never disrupt the page.
       }
     }
 
@@ -57,12 +53,9 @@ export default defineContentScript({
     }
 
     // Primary trigger: double-click a code identifier (the word it selects).
-    // No DOM gate beyond "valid identifier" — show() already limits to /files.
     window.addEventListener('dblclick', (e) => {
       const sel = window.getSelection();
-      const raw = sel?.toString().trim() ?? '';
-      console.log('[pr-goto-def] selection=', JSON.stringify(raw)); // TODO(task 9): remove
-      const symbol = extractIdentifier(raw);
+      const symbol = extractIdentifier(sel?.toString() ?? '');
       if (!symbol) return;
       const target = e.target as HTMLElement | null;
       const anchor =
@@ -77,21 +70,10 @@ export default defineContentScript({
       if (isJumpMessage(message)) showAtPoint(lastX, lastY);
     });
 
-    // Alt+click on a token (never hijacks normal clicks).
+    // Secondary trigger: Alt+click on a token (never hijacks normal clicks).
     window.addEventListener('click', (e) => {
       if (e.altKey) showAtPoint(e.clientX, e.clientY);
     });
-
-    // Lightweight self-diagnostic. TODO(task 9): gate behind a debug setting before publishing.
-    window.setTimeout(() => {
-      const files = document.querySelectorAll(DIAG_SELECTORS.files).length;
-      const codeLines = document.querySelectorAll(DIAG_SELECTORS.codeLines).length;
-      console.log(
-        `[pr-goto-def] armed on ${location.href} — files:${files} codeLines:${codeLines} headSha:${
-          getPageContext()?.headSha || '?'
-        }`,
-      );
-    }, 1500);
   },
 });
 

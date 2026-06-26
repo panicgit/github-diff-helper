@@ -63,10 +63,6 @@ async function doProbe(ctx: PageContext, sym: string): Promise<SearchProbe | nul
   const p = data.payload ?? (data as unknown as typeof data.payload);
   if (!p || !Array.isArray(p.results)) return null;
 
-  if (p.results[0]) {
-    // Captures the field map for the direct-jump upgrade. TODO(task 9): remove before publishing.
-    console.log('[pr-goto-def] search results[0] =', p.results[0]);
-  }
   return {
     loggedIn: Boolean(p.logged_in),
     count: Number(p.result_count ?? p.results.length),

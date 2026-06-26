@@ -3,7 +3,7 @@ import { defineConfig } from 'wxt';
 // Full design rationale: docs/architecture.md
 export default defineConfig({
   manifest: {
-    name: 'PR Jump-to-Definition',
+    name: 'GitHub Diff Helper: Go to Definition',
     description:
       'Client-side go-to-definition inside GitHub PR diffs. Reuses your GitHub session. No data leaves your browser.',
     // Narrow host scope; the real injection gate is the content script `matches`.
