@@ -11,28 +11,114 @@ not the rest of the codebase. So when a changed line calls some `doSomething()`,
 no quick way to see **what that function is or where it's defined**. GitHub's native code
 navigation works on the file (blob) view, but **not inside PR diffs**.
 
-## MVP: Go to definition in PR diffs
+## What it does (MVP)
 
-Put the cursor on a symbol in a PR diff, hit a shortcut, and jump to (or preview) where
-it's defined.
+On a PR's diff, target a function/identifier and jump to where it's defined:
 
-- **No backend.** Everything runs in your browser.
-- **Works with private & org repos** by reusing your existing GitHub login session — no
-  token setup, and nothing leaves your browser.
+- **Double-click** the identifier (primary), or
+- press **`Ctrl+Shift+Y`** / **`Cmd+Shift+Y`** with the mouse over it, or
+- **`Alt`+click** it.
 
-## Tech
+A small popover appears with a **Jump to definition** action:
 
-- TypeScript + Vite
-- Manifest V3
-- Resolves definitions client-side by reusing GitHub's own code search (authenticated via
-  your existing session)
+- **Defined in this PR** → scrolls to the definition line and flashes it (no navigation).
+- **Defined elsewhere in the repo** → falls back to your repo's **GitHub code search**
+  (uses your existing login session, so private/org repos work).
 
-## Roadmap (later)
+No backend, no token setup — nothing leaves your browser.
 
-Broader PR-diff review improvements: large-diff navigation, auto-collapsing noisy files
-(lockfiles / generated code), review-progress tracking, and readability tweaks.
+## Install & run (development)
+
+### Prerequisites
+
+- **Node 20+** (the repo pins a version in [`.nvmrc`](./.nvmrc)) and **npm**
+- Google Chrome
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2a. Quick dev run (auto-opens a browser with the extension loaded)
+
+```bash
+npm run dev
+```
+
+WXT launches a Chrome instance with the extension installed and live-reloads on changes.
+Note: this is a fresh browser profile (logged out), so the code-search fallback needs you
+to sign in to GitHub in that window.
+
+### 2b. Build and load into *your* Chrome (recommended for the code-search feature)
+
+```bash
+npm run build      # outputs to .output/chrome-mv3/
+```
+
+Then load it once:
+
+1. Open `chrome://extensions`
+2. Turn on **Developer mode** (top right)
+3. Click **Load unpacked** and select the **`.output/chrome-mv3`** folder
+
+Because this is *your* logged-in Chrome, the code-search fallback works against private
+repos too.
+
+> **After changing code:** run `npm run build` again, then click the **↻ (reload)** icon
+> on the extension's card in `chrome://extensions`. No zip and no re-upload — “Load
+> unpacked” reads the folder directly. (A zip is only needed to publish to the Web Store:
+> `npm run zip`.)
+
+### Keyboard shortcut
+
+`Ctrl/Cmd+Shift+Y` is the default. View or change it at `chrome://extensions/shortcuts`.
+
+### Useful scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Dev build + auto-reloading browser |
+| `npm run build` | Production build to `.output/chrome-mv3/` |
+| `npm run zip` | Package a `.zip` for the Web Store |
+| `npm run compile` | Type-check only (`tsc --noEmit`) |
+
+## How it works
+
+100% client-side. The content script runs on github.com PR pages and resolves a symbol in
+two tiers:
+
+- **Tier 0 — local diff scan.** Scans the rendered diff for a definition of the symbol
+  (Kotlin / Java / JS·TS / Python / Go / …). Instant, no network, and it sees the PR's
+  head branch.
+- **Tier 1 — code search.** If it's not in the PR, it queries GitHub code search for the
+  repo using your **session cookies** (`Accept: application/json`, same-origin) and offers
+  the native code-search result.
+
+See [`docs/architecture.md`](./docs/architecture.md) for the full design.
+
+## Project layout
+
+```
+entrypoints/
+  github.content.ts   # content script: triggers → resolve → popover
+  background.ts        # relays the keyboard command to the active tab
+src/
+  dom.ts               # all GitHub diff selectors + page context (the churn point)
+  token.ts             # identifier detection / extraction
+  resolver/            # tier0 (diff scan), tier1 (code search), orchestration
+  popover.ts           # Shadow-DOM popover + jump action
+wxt.config.ts          # manifest (permissions, command, CSP)
+```
 
 ## Privacy
 
 No backend, no analytics, no data leaves your browser. The extension only talks to GitHub,
-as you, using your existing session.
+as you, using your existing session. Its content security policy restricts network access
+to `github.com` only.
+
+## Roadmap (later)
+
+- Jump straight to a definition in another file (parse code-search results inline)
+- Broader PR-diff review improvements: large-diff navigation, auto-collapsing noisy files
+  (lockfiles / generated code), review-progress tracking, and readability tweaks
