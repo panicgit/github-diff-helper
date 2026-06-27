@@ -2,7 +2,13 @@
 
 A Manifest V3 Chrome extension that removes friction from reviewing GitHub pull request diffs.
 
-> **Status:** early development. The first feature is **go-to-definition inside PR diffs**.
+[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/ljknkaafpkhdfjcmaajgacfkgmnnehkl?label=Chrome%20Web%20Store&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/github-diff-helper-go-to/ljknkaafpkhdfjcmaajgacfkgmnnehkl)
+[![Users](https://img.shields.io/chrome-web-store/users/ljknkaafpkhdfjcmaajgacfkgmnnehkl)](https://chromewebstore.google.com/detail/github-diff-helper-go-to/ljknkaafpkhdfjcmaajgacfkgmnnehkl)
+[![Rating](https://img.shields.io/chrome-web-store/rating/ljknkaafpkhdfjcmaajgacfkgmnnehkl)](https://chromewebstore.google.com/detail/github-diff-helper-go-to/ljknkaafpkhdfjcmaajgacfkgmnnehkl)
+
+**▶ [Install from the Chrome Web Store](https://chromewebstore.google.com/detail/github-diff-helper-go-to/ljknkaafpkhdfjcmaajgacfkgmnnehkl)**
+
+> **Status:** published — v0.1.0 on the Chrome Web Store. First feature: **go-to-definition inside PR diffs**.
 
 ## The problem
 
@@ -27,7 +33,9 @@ A small popover appears with a **Jump to definition** action:
 
 No backend, no token setup — nothing leaves your browser.
 
-## Install & run (development)
+## Build from source (development)
+
+> Most users should just [install from the Chrome Web Store](https://chromewebstore.google.com/detail/github-diff-helper-go-to/ljknkaafpkhdfjcmaajgacfkgmnnehkl). The steps below are for contributors building locally.
 
 ### Prerequisites
 
