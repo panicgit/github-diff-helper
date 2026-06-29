@@ -128,12 +128,38 @@ function fallbackRow(model: PopoverModel): HTMLElement {
 
 function jump(r: DefinitionResult): void {
   if (r.targetEl) {
-    r.targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    flash(r.targetEl);
+    scrollIntoViewThenFlash(r.targetEl);
   } else if (r.permalinkUrl) {
     window.open(r.permalinkUrl, '_blank', 'noopener');
   }
   dismissPopover();
+}
+
+// Smooth-scroll to the target, then flash only once the scroll has settled —
+// otherwise the highlight can fade out before the line reaches the viewport.
+// There's no reliable "scroll finished" signal for smooth scrollIntoView
+// (`scrollend` is Chrome 114+ and fires on whichever scroller moved), so we
+// watch the target's viewport position frame-by-frame instead. This also
+// handles GitHub's nested scrollers and the already-on-screen case (no scroll
+// → position is stable immediately).
+function scrollIntoViewThenFlash(el: HTMLElement): void {
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  let lastTop = NaN;
+  let stableFrames = 0;
+  let startTs = 0;
+  const settle = (ts: number) => {
+    if (!startTs) startTs = ts;
+    const top = el.getBoundingClientRect().top;
+    stableFrames = Math.abs(top - lastTop) < 0.5 ? stableFrames + 1 : 0;
+    lastTop = top;
+    // ~3 still frames = scrolling stopped; 2s cap guards against endless motion.
+    if (stableFrames >= 3 || ts - startTs > 2000) {
+      flash(el);
+      return;
+    }
+    requestAnimationFrame(settle);
+  };
+  requestAnimationFrame(settle);
 }
 
 function flash(el: HTMLElement): void {
@@ -146,7 +172,7 @@ function flash(el: HTMLElement): void {
     window.setTimeout(() => {
       el.style.transition = origTransition;
     }, 250);
-  }, 700);
+  }, 1400);
 }
 
 const CSS = `

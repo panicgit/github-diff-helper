@@ -1,6 +1,6 @@
 {
   "name": "github-diff-helper",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "Client-side go-to-definition inside GitHub PR diffs. Reuses your GitHub session. No data leaves your browser.",
