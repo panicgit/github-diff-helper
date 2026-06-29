@@ -172,7 +172,7 @@ function flash(el: HTMLElement): void {
     window.setTimeout(() => {
       el.style.transition = origTransition;
     }, 250);
-  }, 1400);
+  }, 2800);
 }
 
 const CSS = `
